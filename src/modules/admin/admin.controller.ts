@@ -7,6 +7,7 @@ import * as adminService from './admin.service';
 interface ListUsersQuery {
   role?: Role;
   status?: UserStatus;
+  search?: string;
   page: number;
   limit: number;
 }

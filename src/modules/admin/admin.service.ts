@@ -6,6 +6,7 @@ import { sanitizeUser } from '../../utils/sanitizeUser';
 interface ListUsersQuery {
   role?: Role;
   status?: UserStatus;
+  search?: string;
   page: number;
   limit: number;
 }
@@ -38,6 +39,14 @@ export const listUsers = async (query: ListUsersQuery) => {
   const where: Prisma.UserWhereInput = {
     ...(query.role ? { role: query.role } : {}),
     ...(query.status ? { status: query.status } : {}),
+    ...(query.search
+      ? {
+          OR: [
+            { name: { contains: query.search, mode: Prisma.QueryMode.insensitive } },
+            { email: { contains: query.search, mode: Prisma.QueryMode.insensitive } },
+          ],
+        }
+      : {}),
   };
   const [items, total] = await Promise.all([
     prisma.user.findMany({
