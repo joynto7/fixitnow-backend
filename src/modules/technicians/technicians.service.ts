@@ -114,3 +114,18 @@ export const getOwnAvailability = async (userId: string) => {
     orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
   });
 };
+
+export const getPublicAvailability = async (technicianId: string) => {
+  const technician = await prisma.technicianProfile.findFirst({
+    where: { id: technicianId, user: { status: 'ACTIVE' } },
+  });
+  if (!technician) {
+    throw new AppError(404, 'Technician not found');
+  }
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  return prisma.availability.findMany({
+    where: { technicianId, date: { gte: today } },
+    orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+  });
+};

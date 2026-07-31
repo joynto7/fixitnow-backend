@@ -41,3 +41,8 @@ export const getAvailability = catchAsync(async (req: Request, res: Response) =>
   const slots = await technicianService.getOwnAvailability(req.user!.id);
   sendSuccess(res, 200, 'Availability fetched', slots);
 });
+
+export const getAvailabilityForTechnician = catchAsync(async (req: Request, res: Response) => {
+  const slots = await technicianService.getPublicAvailability(req.params.id);
+  sendSuccess(res, 200, 'Availability fetched', slots);
+});

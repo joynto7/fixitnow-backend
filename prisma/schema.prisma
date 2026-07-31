@@ -119,29 +119,32 @@ model Availability {
   updatedAt    DateTime @updatedAt
 
   technician TechnicianProfile @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  booking    Booking?
 
   @@index([technicianId, date])
   @@map("availabilities")
 }
 
 model Booking {
-  id            String        @id @default(uuid())
-  customerId    String
-  technicianId  String
-  serviceId     String
-  scheduledDate DateTime
-  address       String
-  notes         String?
-  status        BookingStatus @default(REQUESTED)
-  price         Decimal       @db.Decimal(10, 2)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                 String        @id @default(uuid())
+  customerId         String
+  technicianId       String
+  serviceId          String
+  availabilitySlotId String?       @unique
+  scheduledDate      DateTime
+  address            String
+  notes              String?
+  status             BookingStatus @default(REQUESTED)
+  price              Decimal       @db.Decimal(10, 2)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 
-  customer   User              @relation("CustomerBookings", fields: [customerId], references: [id])
-  technician TechnicianProfile @relation("TechnicianBookings", fields: [technicianId], references: [id])
-  service    Service           @relation(fields: [serviceId], references: [id])
-  payment    Payment?
-  review     Review?
+  customer         User              @relation("CustomerBookings", fields: [customerId], references: [id])
+  technician       TechnicianProfile @relation("TechnicianBookings", fields: [technicianId], references: [id])
+  service          Service           @relation(fields: [serviceId], references: [id])
+  availabilitySlot Availability?     @relation(fields: [availabilitySlotId], references: [id])
+  payment          Payment?
+  review           Review?
 
   @@index([customerId])
   @@index([technicianId])

@@ -14,11 +14,17 @@ import {
   updateProfile,
   setAvailability,
   getAvailability,
+  getAvailabilityForTechnician,
 } from './technicians.controller';
 
 export const technicianPublicRouter = Router();
 technicianPublicRouter.get('/', validate(listTechniciansQuerySchema), getTechnicians);
 technicianPublicRouter.get('/:id', validate(technicianIdParamSchema), getTechnician);
+technicianPublicRouter.get(
+  '/:id/availability',
+  validate(technicianIdParamSchema),
+  getAvailabilityForTechnician
+);
 
 export const technicianSelfRouter = Router();
 technicianSelfRouter.use(authenticate, authorize('TECHNICIAN'));

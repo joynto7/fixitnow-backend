@@ -11,7 +11,8 @@ const bookingInclude = {
 
 interface CreateBookingInput {
   serviceId: string;
-  scheduledDate: Date;
+  availabilitySlotId?: string;
+  scheduledDate?: Date;
   address: string;
   notes?: string;
 }
@@ -22,6 +23,14 @@ interface ListQuery {
   limit: number;
 }
 
+// Availability.date is a @db.Date (midnight UTC); startTime is "HH:mm".
+const combineDateAndTime = (date: Date, time: string): Date => {
+  const [hours, minutes] = time.split(':').map(Number);
+  const combined = new Date(date);
+  combined.setUTCHours(hours, minutes, 0, 0);
+  return combined;
+};
+
 export const createBooking = async (customerId: string, data: CreateBookingInput) => {
   const service = await prisma.service.findFirst({
     where: { id: data.serviceId, technician: { user: { status: 'ACTIVE' } } },
@@ -30,6 +39,42 @@ export const createBooking = async (customerId: string, data: CreateBookingInput
     throw new AppError(404, 'Service not found');
   }
 
+  if (data.availabilitySlotId) {
+    return prisma.$transaction(async (tx) => {
+      const slot = await tx.availability.findUnique({ where: { id: data.availabilitySlotId } });
+      if (!slot || slot.technicianId !== service.technicianId) {
+        throw new AppError(404, 'Availability slot not found for this technician');
+      }
+      // Conditional update, not a separate isBooked check: this is what makes
+      // two concurrent bookings for the same slot race-safe instead of both
+      // reading isBooked=false and both succeeding.
+      const claimed = await tx.availability.updateMany({
+        where: { id: slot.id, isBooked: false },
+        data: { isBooked: true },
+      });
+      if (claimed.count === 0) {
+        throw new AppError(409, 'This time slot has already been booked');
+      }
+      return tx.booking.create({
+        data: {
+          customerId,
+          technicianId: service.technicianId,
+          serviceId: service.id,
+          availabilitySlotId: slot.id,
+          scheduledDate: combineDateAndTime(slot.date, slot.startTime),
+          address: data.address,
+          notes: data.notes,
+          price: service.price,
+          status: 'REQUESTED',
+        },
+        include: bookingInclude,
+      });
+    });
+  }
+
+  if (!data.scheduledDate) {
+    throw new AppError(400, 'Select a time slot');
+  }
   return prisma.booking.create({
     data: {
       customerId,
@@ -44,6 +89,11 @@ export const createBooking = async (customerId: string, data: CreateBookingInput
     include: bookingInclude,
   });
 };
+
+const freeAvailabilitySlot = (tx: Prisma.TransactionClient, availabilitySlotId: string | null) =>
+  availabilitySlotId
+    ? tx.availability.update({ where: { id: availabilitySlotId }, data: { isBooked: false } })
+    : Promise.resolve();
 
 export const listCustomerBookings = async (customerId: string, query: ListQuery) => {
   const where: Prisma.BookingWhereInput = {
@@ -114,10 +164,16 @@ export const cancelBooking = async (bookingId: string, customerId: string) => {
   if (!CANCELLABLE_STATUSES.includes(booking.status)) {
     throw new AppError(400, `A booking that is ${booking.status} can no longer be cancelled`);
   }
-  return prisma.booking.update({
-    where: { id: bookingId },
-    data: { status: 'CANCELLED' },
-    include: bookingInclude,
+  return prisma.$transaction(async (tx) => {
+    await freeAvailabilitySlot(tx, booking.availabilitySlotId);
+    return tx.booking.update({
+      where: { id: bookingId },
+      // Clear our own FK too, not just the slot's isBooked flag: it's @unique,
+      // so leaving it set would permanently block that slot from ever being
+      // booked again by anyone.
+      data: { status: 'CANCELLED', availabilitySlotId: null },
+      include: bookingInclude,
+    });
   });
 };
 
@@ -153,9 +209,19 @@ export const updateBookingStatusByTechnician = async (
     throw new AppError(400, `Cannot ${action.toLowerCase()} a booking that is currently ${booking.status}`);
   }
 
-  return prisma.booking.update({
-    where: { id: bookingId },
-    data: { status: transition.to },
-    include: bookingInclude,
+  return prisma.$transaction(async (tx) => {
+    if (action === 'DECLINE') {
+      await freeAvailabilitySlot(tx, booking.availabilitySlotId);
+    }
+    return tx.booking.update({
+      where: { id: bookingId },
+      data: {
+        status: transition.to,
+        // Same @unique-FK reasoning as cancelBooking: only clear it on DECLINE
+        // (the terminal, slot-freeing transition), not on ACCEPT/START/COMPLETE.
+        ...(action === 'DECLINE' ? { availabilitySlotId: null } : {}),
+      },
+      include: bookingInclude,
+    });
   });
 };

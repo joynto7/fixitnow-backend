@@ -11,12 +11,18 @@ const bookingStatusEnum = z.enum([
 ]);
 
 export const createBookingSchema = z.object({
-  body: z.object({
-    serviceId: z.string().uuid('Invalid service id'),
-    scheduledDate: z.coerce.date(),
-    address: z.string().trim().min(5, 'Address is required').max(300),
-    notes: z.string().trim().max(1000).optional(),
-  }),
+  body: z
+    .object({
+      serviceId: z.string().uuid('Invalid service id'),
+      availabilitySlotId: z.string().uuid('Invalid availability slot id').optional(),
+      scheduledDate: z.coerce.date().optional(),
+      address: z.string().trim().min(5, 'Address is required').max(300),
+      notes: z.string().trim().max(1000).optional(),
+    })
+    .refine((data) => data.availabilitySlotId || data.scheduledDate, {
+      message: 'Select a time slot',
+      path: ['availabilitySlotId'],
+    }),
 });
 
 export const bookingIdParamSchema = z.object({
