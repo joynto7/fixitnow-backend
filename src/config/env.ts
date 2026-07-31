@@ -7,6 +7,7 @@ const envSchema = z.object({
   PORT: z.string().default('5000'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   BASE_URL: z.string().default('http://localhost:5000'),
+  FRONTEND_URL: z.string().default('http://localhost:3000'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
   JWT_EXPIRES_IN: z.string().default('7d'),
@@ -33,6 +34,7 @@ export const config = {
   nodeEnv: env.NODE_ENV,
   isProduction: env.NODE_ENV === 'production',
   baseUrl: env.BASE_URL,
+  frontendUrl: env.FRONTEND_URL,
   databaseUrl: env.DATABASE_URL,
   jwt: {
     secret: env.JWT_SECRET,

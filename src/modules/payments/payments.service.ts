@@ -175,6 +175,7 @@ export const confirmPayment = async (bookingId: string) => {
 export const handleStripeReturn = async (sessionId: string) => {
   const session = await retrieveStripeSession(sessionId);
   const transactionId = session.metadata?.transactionId;
+  const bookingId = session.metadata?.bookingId;
   if (!transactionId) {
     throw new AppError(400, 'Invalid or unrecognized Stripe session reference');
   }
@@ -183,9 +184,9 @@ export const handleStripeReturn = async (sessionId: string) => {
       stripeSessionId: session.id,
       stripePaymentStatus: session.payment_status,
     });
-    return { success: true, message: 'Payment successful, booking marked as PAID' };
+    return { success: true, message: 'Payment successful, booking marked as PAID', bookingId };
   }
-  return { success: false, message: `Payment not completed yet (status: ${session.payment_status})` };
+  return { success: false, message: `Payment not completed yet (status: ${session.payment_status})`, bookingId };
 };
 
 export const handleStripeWebhookEvent = async (event: Stripe.Event) => {

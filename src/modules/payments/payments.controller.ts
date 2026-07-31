@@ -3,8 +3,14 @@ import Stripe from 'stripe';
 import { catchAsync } from '../../utils/catchAsync';
 import { sendSuccess } from '../../utils/apiResponse';
 import { AppError } from '../../utils/AppError';
+import { config } from '../../config/env';
 import * as paymentService from './payments.service';
 import { constructStripeWebhookEvent } from './providers/stripe.provider';
+
+const paymentOutcomeRedirect = (res: Response, page: 'success' | 'cancel', bookingId?: string | null) => {
+  const query = bookingId ? `?bookingId=${bookingId}` : '';
+  res.redirect(303, `${config.frontendUrl}/payment/${page}${query}`);
+};
 
 export const createPayment = catchAsync(async (req: Request, res: Response) => {
   const result = await paymentService.createPayment(req.user!.id, req.body);
@@ -32,7 +38,7 @@ export const stripeReturn = catchAsync(async (req: Request, res: Response) => {
     throw new AppError(400, 'Missing session_id query parameter');
   }
   const result = await paymentService.handleStripeReturn(sessionId);
-  sendSuccess(res, result.success ? 200 : 402, result.message, null);
+  paymentOutcomeRedirect(res, result.success ? 'success' : 'cancel', result.bookingId);
 });
 
 // Mounted before express.json() with a raw body parser (see app.ts) so the
@@ -50,19 +56,19 @@ export const stripeWebhookHandler = catchAsync(async (req: Request, res: Respons
 export const sslcommerzSuccess = catchAsync(async (req: Request, res: Response) => {
   const payload = { ...req.query, ...req.body } as Record<string, unknown>;
   const payment = await paymentService.handleSslcommerzCallback(payload);
-  sendSuccess(res, 200, 'Payment successful', payment);
+  paymentOutcomeRedirect(res, payment?.status === 'COMPLETED' ? 'success' : 'cancel', payment?.bookingId);
 });
 
 export const sslcommerzFail = catchAsync(async (req: Request, res: Response) => {
   const payload = { ...req.query, ...req.body } as Record<string, unknown>;
-  await paymentService.handleSslcommerzFailureCallback(payload);
-  sendSuccess(res, 200, 'Payment failed', null);
+  const payment = await paymentService.handleSslcommerzFailureCallback(payload);
+  paymentOutcomeRedirect(res, 'cancel', payment?.bookingId);
 });
 
 export const sslcommerzCancel = catchAsync(async (req: Request, res: Response) => {
   const payload = { ...req.query, ...req.body } as Record<string, unknown>;
-  await paymentService.handleSslcommerzFailureCallback(payload);
-  sendSuccess(res, 200, 'Payment cancelled', null);
+  const payment = await paymentService.handleSslcommerzFailureCallback(payload);
+  paymentOutcomeRedirect(res, 'cancel', payment?.bookingId);
 });
 
 export const sslcommerzIpn = catchAsync(async (req: Request, res: Response) => {

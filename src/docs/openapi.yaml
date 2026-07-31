@@ -797,12 +797,11 @@ paths:
   /payments/stripe/return:
     get:
       tags: [Payments]
-      summary: Browser redirect target after Stripe Checkout (no frontend, returns JSON)
+      summary: Browser redirect target after Stripe Checkout — finalizes the payment, then 303s to FRONTEND_URL's /payment/success or /payment/cancel (?bookingId=...)
       parameters:
         - { name: session_id, in: query, required: true, schema: { type: string } }
       responses:
-        '200': { description: Payment successful }
-        '402': { description: Payment not completed }
+        '303': { description: Redirect to the frontend's payment outcome page }
 
   /payments/webhook/stripe:
     post:
@@ -815,23 +814,23 @@ paths:
   /payments/sslcommerz/success:
     post:
       tags: [Payments]
-      summary: SSLCommerz success redirect/callback - called by the gateway, not by clients
+      summary: SSLCommerz success redirect/callback - called by the gateway, not by clients. Validates and finalizes, then 303s to FRONTEND_URL's /payment/success or /payment/cancel (?bookingId=...)
       responses:
-        '200': { description: Payment validated and finalized }
+        '303': { description: Redirect to the frontend's payment outcome page }
 
   /payments/sslcommerz/fail:
     post:
       tags: [Payments]
-      summary: SSLCommerz failure redirect/callback - called by the gateway, not by clients
+      summary: SSLCommerz failure redirect/callback - called by the gateway, not by clients. 303s to FRONTEND_URL's /payment/cancel (?bookingId=...)
       responses:
-        '200': { description: Payment marked failed }
+        '303': { description: Redirect to the frontend's payment cancel page }
 
   /payments/sslcommerz/cancel:
     post:
       tags: [Payments]
-      summary: SSLCommerz cancel redirect/callback - called by the gateway, not by clients
+      summary: SSLCommerz cancel redirect/callback - called by the gateway, not by clients. 303s to FRONTEND_URL's /payment/cancel (?bookingId=...)
       responses:
-        '200': { description: Payment marked failed (cancelled) }
+        '303': { description: Redirect to the frontend's payment cancel page }
 
   /payments/ipn/sslcommerz:
     post:
