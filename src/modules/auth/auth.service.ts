@@ -39,7 +39,7 @@ export const registerUser = async (input: RegisterInput) => {
 };
 
 export const loginUser = async (email: string, password: string) => {
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({ where: { email }, include: { technicianProfile: true } });
   if (!user) {
     throw new AppError(401, 'Invalid email or password');
   }
