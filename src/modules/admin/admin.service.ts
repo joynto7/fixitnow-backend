@@ -10,6 +10,30 @@ interface ListUsersQuery {
   limit: number;
 }
 
+export const getPlatformStats = async () => {
+  const [totalUsers, customers, technicians, banned, totalBookings, bookingsByStatus, totalCategories, revenue] =
+    await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { role: 'CUSTOMER' } }),
+      prisma.user.count({ where: { role: 'TECHNICIAN' } }),
+      prisma.user.count({ where: { status: 'BANNED' } }),
+      prisma.booking.count(),
+      prisma.booking.groupBy({ by: ['status'], _count: { _all: true } }),
+      prisma.category.count(),
+      prisma.payment.aggregate({ where: { status: 'COMPLETED' }, _sum: { amount: true } }),
+    ]);
+
+  return {
+    users: { total: totalUsers, customers, technicians, banned },
+    bookings: {
+      total: totalBookings,
+      byStatus: Object.fromEntries(bookingsByStatus.map((b) => [b.status, b._count._all])),
+    },
+    categories: totalCategories,
+    revenue: Number(revenue._sum.amount ?? 0),
+  };
+};
+
 export const listUsers = async (query: ListUsersQuery) => {
   const where: Prisma.UserWhereInput = {
     ...(query.role ? { role: query.role } : {}),

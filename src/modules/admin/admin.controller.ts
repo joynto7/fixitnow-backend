@@ -19,6 +19,11 @@ interface ListBookingsQuery {
   limit: number;
 }
 
+export const getPlatformStats = catchAsync(async (_req: Request, res: Response) => {
+  const stats = await adminService.getPlatformStats();
+  sendSuccess(res, 200, 'Platform stats fetched', stats);
+});
+
 export const getUsers = catchAsync(async (req: Request, res: Response) => {
   const query = req.query as unknown as ListUsersQuery;
   const result = await adminService.listUsers(query);

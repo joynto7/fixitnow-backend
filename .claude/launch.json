@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "fixitnow-backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 4000
+    },
+    {
+      "name": "fixitnow-frontend",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd ../FixItNow-frontend && npm run dev"],
+      "port": 3000
+    }
+  ]
+}
