@@ -18,7 +18,7 @@ export const createPayment = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const confirmPayment = catchAsync(async (req: Request, res: Response) => {
-  const payment = await paymentService.confirmPayment(req.body.bookingId);
+  const payment = await paymentService.confirmPayment(req.body.bookingId, req.user!.id);
   sendSuccess(res, 200, 'Payment confirmed', payment);
 });
 

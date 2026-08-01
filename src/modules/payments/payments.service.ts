@@ -130,7 +130,15 @@ const markPaymentFailed = async (transactionId: string, metadata: Metadata = {})
   });
 };
 
-export const confirmPayment = async (bookingId: string) => {
+export const confirmPayment = async (bookingId: string, customerId: string) => {
+  const booking = await prisma.booking.findUnique({ where: { id: bookingId }, select: { customerId: true } });
+  if (!booking) {
+    throw new AppError(404, 'Booking not found');
+  }
+  if (booking.customerId !== customerId) {
+    throw new AppError(403, 'You can only confirm payment for your own bookings');
+  }
+
   const payment = await prisma.payment.findUnique({ where: { bookingId } });
   if (!payment) {
     throw new AppError(404, 'No payment found for this booking');
