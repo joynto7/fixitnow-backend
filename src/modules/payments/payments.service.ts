@@ -130,13 +130,19 @@ const markPaymentFailed = async (transactionId: string, metadata: Metadata = {})
   });
 };
 
-export const confirmPayment = async (bookingId: string, customerId: string) => {
-  const booking = await prisma.booking.findUnique({ where: { id: bookingId }, select: { customerId: true } });
+export const confirmPayment = async (bookingId: string, requester: { id: string; role: Role }) => {
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { technician: { include: { user: { select: { id: true } } } } },
+  });
   if (!booking) {
     throw new AppError(404, 'Booking not found');
   }
-  if (booking.customerId !== customerId) {
-    throw new AppError(403, 'You can only confirm payment for your own bookings');
+  const isCustomer = booking.customerId === requester.id;
+  const isTechnician = booking.technician.user.id === requester.id;
+  const isAdmin = requester.role === 'ADMIN';
+  if (!isCustomer && !isTechnician && !isAdmin) {
+    throw new AppError(403, 'You do not have access to this booking\'s payment');
   }
 
   const payment = await prisma.payment.findUnique({ where: { bookingId } });

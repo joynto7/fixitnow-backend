@@ -18,7 +18,7 @@ import {
 export const paymentRouter = Router();
 
 paymentRouter.post('/create', authenticate, authorize('CUSTOMER'), validate(createPaymentSchema), createPayment);
-paymentRouter.post('/confirm', authenticate, authorize('CUSTOMER'), validate(confirmPaymentSchema), confirmPayment);
+paymentRouter.post('/confirm', authenticate, validate(confirmPaymentSchema), confirmPayment);
 paymentRouter.get('/', authenticate, getPayments);
 
 // Provider redirect/callback endpoints are hit by the browser or the gateway's
