@@ -85,6 +85,11 @@ export const updateOwnProfile = async (
   return prisma.technicianProfile.update({ where: { userId }, data });
 };
 
+export const updateOwnPhoto = async (userId: string, photoUrl: string) => {
+  await getOwnProfileOrThrow(userId);
+  return prisma.technicianProfile.update({ where: { userId }, data: { photoUrl } });
+};
+
 export const setOwnAvailability = async (userId: string, slots: Slot[]) => {
   const profile = await getOwnProfileOrThrow(userId);
 

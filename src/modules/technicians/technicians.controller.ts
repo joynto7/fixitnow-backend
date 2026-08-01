@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { catchAsync } from '../../utils/catchAsync';
 import { sendSuccess } from '../../utils/apiResponse';
+import { AppError } from '../../utils/AppError';
 import * as technicianService from './technicians.service';
 
 interface ListTechniciansQuery {
@@ -30,6 +31,15 @@ export const getTechnician = catchAsync(async (req: Request, res: Response) => {
 export const updateProfile = catchAsync(async (req: Request, res: Response) => {
   const profile = await technicianService.updateOwnProfile(req.user!.id, req.body);
   sendSuccess(res, 200, 'Profile updated', profile);
+});
+
+export const uploadProfilePhoto = catchAsync(async (req: Request, res: Response) => {
+  if (!req.file) {
+    throw new AppError(400, 'No photo uploaded');
+  }
+  const photoUrl = `/uploads/technician-photos/${req.file.filename}`;
+  const profile = await technicianService.updateOwnPhoto(req.user!.id, photoUrl);
+  sendSuccess(res, 200, 'Photo updated', profile);
 });
 
 export const setAvailability = catchAsync(async (req: Request, res: Response) => {

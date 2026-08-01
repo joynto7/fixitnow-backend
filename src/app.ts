@@ -27,6 +27,17 @@ app.post('/api/payments/webhook/stripe', express.raw({ type: 'application/json' 
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// helmet's default Cross-Origin-Resource-Policy (same-origin) would block the
+// frontend, on a different origin, from embedding these — they're meant to be
+// public, so relax it just for this one route rather than for the whole app.
+app.use(
+  '/uploads',
+  (_req: Request, res: Response, next: express.NextFunction) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+  },
+  express.static(path.join(__dirname, '../uploads'))
+);
 
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({ success: true, message: 'FixItNow API is running', data: null });

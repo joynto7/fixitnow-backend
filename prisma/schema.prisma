@@ -63,6 +63,7 @@ model TechnicianProfile {
   bio             String?
   experienceYears Int?
   location        String?
+  photoUrl        String?
   avgRating       Float    @default(0)
   totalReviews    Int      @default(0)
   createdAt       DateTime @default(now())

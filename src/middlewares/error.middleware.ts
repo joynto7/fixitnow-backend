@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import { ZodError } from 'zod';
 import jwt from 'jsonwebtoken';
+import { MulterError } from 'multer';
 import { AppError } from '../utils/AppError';
 import { config } from '../config/env';
 
@@ -43,6 +44,8 @@ export const errorHandler = (err: unknown, _req: Request, res: Response, _next: 
     error = new AppError(401, 'Session expired, please log in again');
   } else if (error instanceof jwt.JsonWebTokenError) {
     error = new AppError(401, 'Invalid authentication token');
+  } else if (error instanceof MulterError) {
+    error = new AppError(400, error.code === 'LIMIT_FILE_SIZE' ? 'File is too large (max 5MB)' : error.message);
   }
 
   if (error instanceof AppError) {
