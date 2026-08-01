@@ -37,13 +37,11 @@ async function main() {
   });
 
   console.log('Creating categories...');
-  const [plumbing, electrical, cleaning, painting, carpentry] = await Promise.all(
+  const [plumbing, electrical, cleaning] = await Promise.all(
     [
       { name: 'Plumbing', description: 'Leaks, pipes, fixtures, and installations' },
       { name: 'Electrical', description: 'Wiring, outlets, lighting, and inspections' },
       { name: 'Cleaning', description: 'Home and office cleaning services' },
-      { name: 'Painting', description: 'Interior and exterior painting' },
-      { name: 'Carpentry', description: 'Furniture, fittings, and woodwork repair' },
     ].map((data) => prisma.category.create({ data }))
   );
 
@@ -122,12 +120,6 @@ async function main() {
   const officeClean = await prisma.service.create({
     data: { title: 'Office Cleaning', description: 'Recurring office cleaning', price: 150, categoryId: cleaning.id, technicianId: frank.id },
   });
-  // Painting and Carpentry categories are seeded with no services yet, to
-  // demonstrate that GET /api/categories/admin/delete-guard only blocks
-  // deletion once a category actually has services under it.
-  void painting;
-  void carpentry;
-
   console.log('Creating availability slots...');
   const inDays = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000);
   await prisma.availability.createMany({
