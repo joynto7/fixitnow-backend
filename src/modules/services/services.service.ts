@@ -1,6 +1,17 @@
+import { randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../utils/AppError';
+import { uploadBufferToR2, deleteFromR2 } from '../../config/r2';
+
+const MEDIA_EXTENSIONS: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'video/mp4': 'mp4',
+  'video/webm': 'webm',
+  'video/quicktime': 'mov',
+};
 
 interface ListServicesQuery {
   categoryId?: string;
@@ -22,6 +33,7 @@ interface ServiceInput {
 const technicianInclude = {
   category: true,
   technician: { include: { user: { select: { id: true, name: true } } } },
+  media: { orderBy: { createdAt: 'asc' } },
 } satisfies Prisma.ServiceInclude;
 
 export const listServices = async (query: ListServicesQuery) => {
@@ -135,4 +147,48 @@ export const deleteService = async (userId: string, serviceId: string) => {
     throw new AppError(400, 'Cannot delete a service that already has bookings');
   }
   await prisma.service.delete({ where: { id: serviceId } });
+};
+
+const assertOwnService = async (userId: string, serviceId: string) => {
+  const profile = await getOwnTechnicianProfile(userId);
+  const service = await prisma.service.findUnique({ where: { id: serviceId } });
+  if (!service) {
+    throw new AppError(404, 'Service not found');
+  }
+  if (service.technicianId !== profile.id) {
+    throw new AppError(403, 'You can only manage media on your own services');
+  }
+  return service;
+};
+
+export const addServiceMedia = async (userId: string, serviceId: string, file: Express.Multer.File) => {
+  await assertOwnService(userId, serviceId);
+
+  const isVideo = file.mimetype.startsWith('video/');
+  const ext = MEDIA_EXTENSIONS[file.mimetype] ?? 'bin';
+  const key = `service-media/${randomUUID()}.${ext}`;
+  const url = await uploadBufferToR2(file.buffer, key, file.mimetype);
+
+  return prisma.serviceMedia.create({
+    data: {
+      serviceId,
+      url,
+      // `publicId` holds the R2 object key here (needed to delete the object later),
+      // not a Cloudinary-style id - same column, repurposed for the R2 integration.
+      publicId: key,
+      type: isVideo ? 'VIDEO' : 'PHOTO',
+    },
+  });
+};
+
+export const removeServiceMedia = async (userId: string, serviceId: string, mediaId: string) => {
+  await assertOwnService(userId, serviceId);
+
+  const media = await prisma.serviceMedia.findUnique({ where: { id: mediaId } });
+  if (!media || media.serviceId !== serviceId) {
+    throw new AppError(404, 'Media not found');
+  }
+
+  await deleteFromR2(media.publicId);
+  await prisma.serviceMedia.delete({ where: { id: mediaId } });
 };

@@ -39,6 +39,11 @@ enum PaymentStatus {
   FAILED
 }
 
+enum MediaType {
+  PHOTO
+  VIDEO
+}
+
 model User {
   id        String     @id @default(uuid())
   name      String
@@ -103,10 +108,25 @@ model Service {
   category   Category          @relation(fields: [categoryId], references: [id])
   technician TechnicianProfile @relation(fields: [technicianId], references: [id], onDelete: Cascade)
   bookings   Booking[]
+  media      ServiceMedia[]
 
   @@index([categoryId])
   @@index([technicianId])
   @@map("services")
+}
+
+model ServiceMedia {
+  id        String    @id @default(uuid())
+  serviceId String
+  url       String
+  publicId  String
+  type      MediaType
+  createdAt DateTime  @default(now())
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId])
+  @@map("service_media")
 }
 
 model Availability {

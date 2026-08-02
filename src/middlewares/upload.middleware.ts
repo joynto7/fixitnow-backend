@@ -24,3 +24,19 @@ export const uploadPhoto = multer({
     cb(null, true);
   },
 }).single('photo');
+
+// Service media (work photos/videos) uploads straight to Cloudinary, so it's
+// buffered in memory rather than written to local disk like the profile photo.
+const ALLOWED_MEDIA_MIME_TYPES = [...ALLOWED_MIME_TYPES, 'video/mp4', 'video/webm', 'video/quicktime'];
+
+export const uploadMedia = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!ALLOWED_MEDIA_MIME_TYPES.includes(file.mimetype)) {
+      cb(new AppError(400, 'Only JPEG/PNG/WebP images or MP4/WebM/MOV videos are allowed'));
+      return;
+    }
+    cb(null, true);
+  },
+}).single('media');

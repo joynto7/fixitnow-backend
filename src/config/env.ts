@@ -18,6 +18,11 @@ const envSchema = z.object({
   SSLCOMMERZ_STORE_ID: z.string().optional(),
   SSLCOMMERZ_STORE_PASSWORD: z.string().optional(),
   SSLCOMMERZ_IS_LIVE: z.string().default('false'),
+  R2_ACCOUNT_ID: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET_NAME: z.string().optional(),
+  R2_PUBLIC_URL: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -52,5 +57,12 @@ export const config = {
     storeId: env.SSLCOMMERZ_STORE_ID,
     storePassword: env.SSLCOMMERZ_STORE_PASSWORD,
     isLive: env.SSLCOMMERZ_IS_LIVE === 'true',
+  },
+  r2: {
+    accountId: env.R2_ACCOUNT_ID,
+    accessKeyId: env.R2_ACCESS_KEY_ID,
+    secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+    bucketName: env.R2_BUCKET_NAME,
+    publicUrl: env.R2_PUBLIC_URL,
   },
 };

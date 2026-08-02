@@ -23,6 +23,13 @@ export const serviceIdParamSchema = z.object({
   params: z.object({ id: z.string().uuid('Invalid service id') }),
 });
 
+export const serviceMediaParamSchema = z.object({
+  params: z.object({
+    id: z.string().uuid('Invalid service id'),
+    mediaId: z.string().uuid('Invalid media id'),
+  }),
+});
+
 export const listServicesQuerySchema = z.object({
   query: z.object({
     categoryId: z.string().uuid().optional(),

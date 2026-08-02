@@ -45,7 +45,7 @@ export const errorHandler = (err: unknown, _req: Request, res: Response, _next: 
   } else if (error instanceof jwt.JsonWebTokenError) {
     error = new AppError(401, 'Invalid authentication token');
   } else if (error instanceof MulterError) {
-    error = new AppError(400, error.code === 'LIMIT_FILE_SIZE' ? 'File is too large (max 5MB)' : error.message);
+    error = new AppError(400, error.code === 'LIMIT_FILE_SIZE' ? 'File is too large' : error.message);
   }
 
   if (error instanceof AppError) {
