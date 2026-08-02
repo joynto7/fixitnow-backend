@@ -37,8 +37,7 @@ export const uploadProfilePhoto = catchAsync(async (req: Request, res: Response)
   if (!req.file) {
     throw new AppError(400, 'No photo uploaded');
   }
-  const photoUrl = `/uploads/technician-photos/${req.file.filename}`;
-  const profile = await technicianService.updateOwnPhoto(req.user!.id, photoUrl);
+  const profile = await technicianService.updateOwnPhoto(req.user!.id, req.file);
   sendSuccess(res, 200, 'Photo updated', profile);
 });
 

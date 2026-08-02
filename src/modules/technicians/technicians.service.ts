@@ -1,6 +1,14 @@
+import { randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../utils/AppError';
+import { uploadBufferToR2 } from '../../config/r2';
+
+const PHOTO_EXTENSIONS: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
 
 interface ListTechniciansQuery {
   categoryId?: string;
@@ -85,8 +93,11 @@ export const updateOwnProfile = async (
   return prisma.technicianProfile.update({ where: { userId }, data });
 };
 
-export const updateOwnPhoto = async (userId: string, photoUrl: string) => {
+export const updateOwnPhoto = async (userId: string, file: Express.Multer.File) => {
   await getOwnProfileOrThrow(userId);
+  const ext = PHOTO_EXTENSIONS[file.mimetype] ?? 'bin';
+  const key = `technician-photos/${randomUUID()}.${ext}`;
+  const photoUrl = await uploadBufferToR2(file.buffer, key, file.mimetype);
   return prisma.technicianProfile.update({ where: { userId }, data: { photoUrl } });
 };
 
