@@ -19,7 +19,7 @@ interface Slot {
 
 const publicTechnicianInclude = {
   user: { select: { id: true, name: true, email: true, phone: true, createdAt: true } },
-  services: { include: { category: true } },
+  services: { include: { category: true, media: { orderBy: { createdAt: 'asc' } } } },
 } satisfies Prisma.TechnicianProfileInclude;
 
 export const listTechnicians = async (query: ListTechniciansQuery) => {
